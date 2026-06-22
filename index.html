@@ -4,27 +4,32 @@
 <title>Dashboard de Sprints</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh;display:flex;flex-direction:column}
 header{background:#fff;border-bottom:0.5px solid #e0e0dc;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;position:sticky;top:0;z-index:100}
 header h1{font-size:17px;font-weight:500}
-.badge{font-size:11px;color:#888;background:#f5f5f3;padding:4px 10px;border-radius:6px;border:0.5px solid #e0e0dc}
+.header-right{display:flex;align-items:center;gap:12px}
+.upload-btn{border:0.5px solid #ccc;border-radius:6px;padding:6px 14px;font-size:12px;color:#555;cursor:pointer;transition:all 0.2s;background:#fff}
+.upload-btn:hover{border-color:#185FA5;color:#185FA5;background:#f0f6ff}
+.upload-btn.loaded{border-color:#3B6D11;color:#3B6D11;background:#f0f7e8}
+.upload-btn input{display:none}
+nav{width:220px;flex-shrink:0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;padding:1.5rem 1rem;border-right:0.5px solid #e0e0dc;background:#fff}
+nav h2{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#aaa;margin-bottom:0.75rem;padding-left:8px}
+.nav-item{display:block;padding:6px 10px;font-size:12px;color:#555;border-radius:6px;cursor:pointer;margin-bottom:2px;transition:all 0.15s;text-decoration:none;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:#f5f5f3;color:#1a1a1a}
+.nav-item.active{background:#e6f1fb;color:#185FA5;font-weight:500}
 .main-layout{display:flex;flex:1}
-nav{width:200px;flex-shrink:0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;padding:1.25rem 0.75rem;border-right:0.5px solid #e0e0dc;background:#fff}
-nav h2{font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#aaa;margin-bottom:8px;padding-left:8px}
-.nav-btn{display:block;width:100%;text-align:left;padding:5px 8px;font-size:12px;color:#555;border:none;background:none;cursor:pointer;border-radius:6px;margin-bottom:2px;transition:all 0.15s}
-.nav-btn:hover{background:#f5f5f3;color:#1a1a1a}
-.nav-btn.active{background:#e6f1fb;color:#185FA5;font-weight:500}
 .content{flex:1;min-width:0;padding:1.5rem 2rem}
 .container{max-width:900px;margin:0 auto}
 .metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
-.metric{background:#fff;border-radius:8px;padding:14px 16px;border:0.5px solid #e8e8e4}
-.metric-label{font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:#888;margin-bottom:4px}
-.metric-val{font-size:22px;font-weight:500}
+.metric{background:#fff;border-radius:8px;padding:14px 16px;border:0.5px solid #e8e8e4;position:relative}
+.metric-label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em}
+.metric-val{font-size:24px;font-weight:500}
 .metric-val.green{color:#3B6D11}.metric-val.red{color:#A32D2D}.metric-val.amber{color:#854F0B}.metric-val.purple{color:#3C3489}
-.delta{font-size:10px;margin-top:3px;font-weight:500}
-.delta.up{color:#3B6D11}.delta.dn{color:#A32D2D}.delta.neu{color:#aaa}
+.metric-delta{font-size:11px;margin-top:4px;font-weight:500}
+.metric-delta.up{color:#3B6D11}.metric-delta.down{color:#A32D2D}.metric-delta.neutral{color:#888}
 .section{background:#fff;border-radius:10px;border:0.5px solid #e8e8e4;padding:1.25rem 1.5rem;margin-bottom:1.25rem;scroll-margin-top:80px}
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .section-title{font-size:14px;font-weight:500}
@@ -33,6 +38,7 @@ nav h2{font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#aaa;
 .legend span{display:flex;align-items:center;gap:4px}
 .lsq{width:10px;height:10px;border-radius:2px;display:inline-block}
 .lln{width:18px;height:0;display:inline-block}
+.chart-wrap{position:relative;width:100%}
 .pct-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .pct-pill{display:flex;align-items:center;gap:4px;font-size:11px;background:#f5f5f3;padding:3px 8px;border-radius:5px}
 .team-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
@@ -43,344 +49,513 @@ nav h2{font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#aaa;
 .fbtn{padding:4px 12px;font-size:11px;border-radius:20px;border:0.5px solid #ccc;background:#fff;color:#666;cursor:pointer;transition:all 0.15s}
 .fbtn.active{background:#e6f1fb;color:#185FA5;border-color:#185FA5;font-weight:500}
 .chart-sub{font-size:11px;color:#888;margin-bottom:10px}
-.period-tag{display:inline-block;background:#e6f1fb;color:#185FA5;font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;margin-bottom:1.25rem;border:0.5px solid #185FA5}
-footer{text-align:center;padding:1.5rem;font-size:11px;color:#bbb;border-top:0.5px solid #e8e8e4;background:#fff}
-@media(max-width:768px){nav{display:none}.metric-grid{grid-template-columns:repeat(2,1fr)}.team-cards{grid-template-columns:1fr}.content{padding:1rem}}
+.trend-line{stroke-dasharray:5,3}
+#upload-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;text-align:center;gap:1rem;padding:2rem}
+#upload-screen h2{font-size:22px;font-weight:500}
+#upload-screen p{font-size:13px;color:#888;max-width:420px;line-height:1.6}
+.upload-big{border:2px dashed #ddd;border-radius:14px;padding:2.5rem 3.5rem;cursor:pointer;transition:all 0.2s;display:inline-block}
+.upload-big:hover{border-color:#185FA5;background:#f0f6ff}
+.upload-big input{display:none}
+.upload-big .icon{font-size:40px;margin-bottom:0.75rem}
+.upload-big .label{font-size:14px;color:#185FA5;font-weight:500;margin-bottom:4px}
+.upload-big .hint{font-size:12px;color:#aaa}
+#dashboard{display:none}
+.alert{background:#fff8e6;border:0.5px solid #f5c518;border-radius:8px;padding:10px 14px;font-size:12px;color:#854F0B;margin-bottom:1rem}
+.divider-sm{height:0.5px;background:#f0f0ec;margin:1rem 0}
+footer{text-align:center;padding:1.5rem;font-size:11px;color:#bbb;border-top:0.5px solid #e8e8e4;background:#fff;margin-top:auto}
+@media(max-width:768px){
+  nav{display:none}
+  .metric-grid{grid-template-columns:repeat(2,1fr)}
+  .team-cards{grid-template-columns:1fr}
+  .content{padding:1rem}
+}
 </style>
 </head>
 <body>
+
 <header>
   <h1>📊 Dashboard de sprints</h1>
-  <span class="badge">Periodo: Q1-S1 → Q2-S6 · Jun 2026</span>
+  <div class="header-right">
+    <span id="file-name" style="font-size:12px;color:#888">versionEditadaConDatosFinales.xlsx</span>
+    <label class="upload-btn loaded" id="header-upload-label">
+      📂 Cargar Excel
+      <input type="file" accept=".xlsx,.xls" onchange="loadFile(this)">
+    </label>
+  </div>
 </header>
+
 <div class="main-layout">
-  <nav>
+
+  <!-- Nav lateral -->
+  <nav id="sidebar" style="display: block;">
     <h2>Secciones</h2>
-    <button class="nav-btn" onclick="navTo('s-metrics',this)">Métricas generales</button>
-    <button class="nav-btn active" onclick="navTo('s-equipo',this)">Distribución equipo</button>
-    <button class="nav-btn" onclick="navTo('s-eg',this)">Estatus general</button>
-    <button class="nav-btn" onclick="navTo('s-gap-g',this)">GAP General</button>
-    <button class="nav-btn" onclick="navTo('s-eps',this)">Estatus por sprint</button>
-    <button class="nav-btn" onclick="navTo('s-gap-s',this)">GAP por sprint</button>
-    <button class="nav-btn" onclick="navTo('s-analisis',this)">Análisis</button>
-    <button class="nav-btn" onclick="navTo('s-validacion',this)">Validación</button>
-    <button class="nav-btn" onclick="navTo('s-local',this)">Equipo local</button>
-    <button class="nav-btn" onclick="navTo('s-delay-a',this)">Retraso análisis</button>
-    <button class="nav-btn" onclick="navTo('s-delay-v',this)">Retraso validación</button>
+    <button class="nav-item" onclick="scrollTo('sec-metricas')">Métricas generales</button>
+    <button class="nav-item" onclick="scrollTo('sec-equipo')">Distribución por equipo</button>
+    <button class="nav-item" onclick="scrollTo('sec-eg')">Estatus general</button>
+    <button class="nav-item" onclick="scrollTo('sec-gap-general')">GAP General</button>
+    <button class="nav-item" onclick="scrollTo('sec-eps')">Estatus por sprint</button>
+    <button class="nav-item" onclick="scrollTo('sec-gap-sprint')">GAP por sprint</button>
+    <button class="nav-item" onclick="scrollTo('sec-analisis')">Análisis</button>
+    <button class="nav-item active" onclick="scrollTo('sec-validacion')">Validación</button>
+    <button class="nav-item" onclick="scrollTo('sec-local')">Equipo local</button>
+    <button class="nav-item" onclick="scrollTo('sec-delay-a')">Retraso análisis</button>
+    <button class="nav-item" onclick="scrollTo('sec-delay-v')">Retraso validación</button>
   </nav>
+
   <div class="content">
     <div class="container">
-      <div class="period-tag">📅 Quincena: Q1-S1 → Q2-S6 · Generado el 22 Jun 2026</div>
 
-      <!-- Métricas -->
-      <div id="s-metrics" style="scroll-margin-top:80px;margin-bottom:1.25rem">
-        <div class="metric-grid">
-          <div class="metric"><div class="metric-label">Total registros</div><div class="metric-val">217</div><div class="delta up">▲ +34 vs anterior</div></div>
-          <div class="metric"><div class="metric-label">Accepted</div><div class="metric-val green">120</div><div class="delta up">▲ +4 vs anterior</div></div>
-          <div class="metric"><div class="metric-label">Discarded</div><div class="metric-val red">31</div><div class="delta dn">▲ +3 vs anterior</div></div>
-          <div class="metric"><div class="metric-label">Blocked</div><div class="metric-val amber">13</div><div class="delta dn">▲ +2 vs anterior</div></div>
-        </div>
-        <div class="metric-grid">
-          <div class="metric"><div class="metric-label">In Progress</div><div class="metric-val amber">10</div><div class="delta dn">▲ +2 vs anterior</div></div>
-          <div class="metric"><div class="metric-label">Ready To Verify</div><div class="metric-val purple">13</div><div class="delta up">▲ +4 vs anterior</div></div>
-          <div class="metric"><div class="metric-label">Analysing</div><div class="metric-val purple">14</div><div class="delta dn">▲ +7 vs anterior</div></div>
-          <div class="metric"><div class="metric-label">New / Test</div><div class="metric-val">13</div><div class="delta dn">▲ +9 nuevo estado</div></div>
-        </div>
+      <!-- Pantalla de carga -->
+      <div id="upload-screen" style="display: none;">
+        <h2>Carga tu archivo Excel</h2>
+        <p>El dashboard detecta automáticamente las hojas y genera todas las gráficas. Los datos se procesan en tu navegador — nunca salen de tu computadora.</p>
+        <label class="upload-big">
+          <input type="file" accept=".xlsx,.xls" onchange="loadFile(this)">
+          <div class="icon">📊</div>
+          <div class="label">Seleccionar archivo Excel</div>
+          <div class="hint">versionEditadaConDatosFinales.xlsx o similar</div>
+        </label>
+        <p style="font-size:11px;color:#ccc;margin-top:0.5rem">Privado · sin conexión al servidor</p>
       </div>
 
-      <!-- Equipo -->
-      <div class="section" id="s-equipo">
-        <div class="section-header"><span class="section-title">Distribución por equipo</span><span class="section-count">217 registros con sprint</span></div>
-        <div class="team-cards">
-          <div class="team-card" style="border-left:3px solid #185FA5"><div class="team-label">Equipo local</div><div class="team-val" style="color:#185FA5">134</div><div class="team-label">62% del total</div></div>
-          <div class="team-card" style="border-left:3px solid #1D9E75"><div class="team-label">Equipo global</div><div class="team-val" style="color:#1D9E75">83</div><div class="team-label">38% del total</div></div>
+      <!-- Dashboard -->
+      <div id="dashboard" style="display: block;">
+
+        <div id="alerts"></div>
+
+        <!-- Métricas -->
+        <div id="sec-metricas" style="scroll-margin-top:80px;margin-bottom:1.25rem">
+          <div style="font-size:12px;color:#aaa;margin-bottom:0.75rem" id="dash-sub">Registros con sprint asignado · estatus general · 217 registros</div>
+          <div class="metric-grid">
+            <div class="metric"><div class="metric-label">Total registros</div><div class="metric-val" id="m-total">217</div><div class="metric-delta neutral" id="d-total"></div></div>
+            <div class="metric"><div class="metric-label">Accepted</div><div class="metric-val green" id="m-accepted">120</div><div class="metric-delta neutral" id="d-accepted"></div></div>
+            <div class="metric"><div class="metric-label">Discarded</div><div class="metric-val red" id="m-discarded">31</div><div class="metric-delta neutral" id="d-discarded"></div></div>
+            <div class="metric"><div class="metric-label">Blocked</div><div class="metric-val amber" id="m-blocked">13</div><div class="metric-delta neutral" id="d-blocked"></div></div>
+          </div>
+          <div class="metric-grid">
+            <div class="metric"><div class="metric-label">In Progress</div><div class="metric-val amber" id="m-inprogress">10</div><div class="metric-delta neutral" id="d-inprogress"></div></div>
+            <div class="metric"><div class="metric-label">Ready To Verify</div><div class="metric-val purple" id="m-rtv">13</div><div class="metric-delta neutral" id="d-rtv"></div></div>
+            <div class="metric"><div class="metric-label">Analysing</div><div class="metric-val purple" id="m-analysing">14</div><div class="metric-delta neutral" id="d-analysing"></div></div>
+            <div class="metric"><div class="metric-label">To Rework / Test</div><div class="metric-val" id="m-other">5</div><div class="metric-delta neutral" id="d-other"></div></div>
+          </div>
         </div>
-        <div style="background:#fff;border:0.5px solid #e8e8e4;border-radius:8px;padding:12px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:11px"><span style="color:#185FA5;font-weight:500">Local 62%</span><span style="color:#1D9E75;font-weight:500">Global 38%</span></div>
-          <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:#e8e8e4"><div style="background:#185FA5;width:62%"></div><div style="background:#1D9E75;width:38%"></div></div>
-          <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:#888"><span>134 tareas</span><span>83 tareas</span></div>
+
+        <!-- Equipo -->
+        <div class="section" id="sec-equipo">
+          <div class="section-header"><span class="section-title">Distribución por equipo</span><span class="section-count" id="eq-total-badge">217 registros con sprint</span></div>
+          <div class="team-cards">
+            <div class="team-card" style="border-left:3px solid #185FA5"><div class="team-label">Equipo local</div><div class="team-val" style="color:#185FA5" id="t-local">140</div><div class="team-label" id="t-local-pct">65% del total</div></div>
+            <div class="team-card" style="border-left:3px solid #1D9E75"><div class="team-label">Equipo global</div><div class="team-val" style="color:#1D9E75" id="t-global">77</div><div class="team-label" id="t-global-pct">35% del total</div></div>
+          </div>
+          <div style="background:#fff;border:0.5px solid #e8e8e4;border-radius:8px;padding:12px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:11px">
+              <span style="color:#185FA5;font-weight:500" id="bar-local-label">Local 65%</span>
+              <span style="color:#1D9E75;font-weight:500" id="bar-global-label">Global 35%</span>
+            </div>
+            <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:#e8e8e4">
+              <div id="bar-local" style="background: rgb(24, 95, 165); width: 65%; transition: width 0.6s;"></div>
+              <div id="bar-global" style="background: rgb(29, 158, 117); width: 35%; transition: width 0.6s;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:#888">
+              <span id="bar-local-n">140 tareas</span><span id="bar-global-n">77 tareas</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Estatus general -->
-      <div class="section" id="s-eg">
-        <div class="section-header"><span class="section-title">Estatus general</span><span class="section-count">217 registros</span></div>
-        <div class="legend">
-          <span><span class="lsq" style="background:rgba(24,95,165,0.3)"></span>Q1</span>
-          <span><span class="lsq" style="background:rgba(29,158,117,0.3)"></span>Q2</span>
-          <span><span class="lln" style="border-top:2px solid #639922"></span>Accepted</span>
-          <span><span class="lln" style="border-top:2px dashed #E24B4A"></span>Discarded</span>
-          <span><span class="lln" style="border-top:2px dashed #EF9F27"></span>In Progress</span>
-          <span><span class="lln" style="border-top:2px dotted #7F77DD"></span>Blocked</span>
-          <span><span class="lln" style="border-top:2px dotted #185FA5"></span>Ready To Verify</span>
-          <span><span class="lln" style="border-top:2px dotted #1D9E75"></span>Analysing</span>
+        <!-- Estatus general -->
+        <div class="section" id="sec-eg">
+          <div class="section-header"><span class="section-title">Estatus general</span><span class="section-count" id="c1b-count">217 registros</span></div>
+          <div class="legend">
+            <span><span class="lsq" style="background:rgba(24,95,165,0.3)"></span>Q1</span>
+            <span><span class="lsq" style="background:rgba(29,158,117,0.3)"></span>Q2</span>
+            <span><span class="lln" style="border-top:2px solid #639922"></span>Accepted</span>
+            <span><span class="lln" style="border-top:2px dashed #E24B4A"></span>Discarded</span>
+            <span><span class="lln" style="border-top:2px dashed #EF9F27"></span>In Progress</span>
+            <span><span class="lln" style="border-top:2px dotted #7F77DD"></span>Blocked</span>
+            <span><span class="lln" style="border-top:2px dotted #185FA5"></span>Ready To Verify</span>
+            <span><span class="lln" style="border-top:2px dotted #1D9E75"></span>Analysing</span>
+          </div>
+          <div class="chart-wrap" style="height:260px"><canvas id="c1b" height="260" style="display: block; box-sizing: border-box; height: 260px; width: 850px;" width="850"></canvas></div>
         </div>
-        <div style="position:relative;width:100%;height:260px"><canvas id="c1b" width="850" height="260" style="display: block; box-sizing: border-box; height: 260px; width: 850px;"></canvas></div>
-      </div>
 
-      <!-- GAP General -->
-      <div class="section" id="s-gap-g">
-        <div class="section-header"><span class="section-title">GAP General</span><span class="section-count">217 registros</span></div>
-        <div class="legend">
-          <span><span class="lsq" style="background:rgba(24,95,165,0.25);border:1px solid rgba(24,95,165,0.5)"></span>Total por sprint</span>
-          <span><span class="lln" style="border-top:2px solid #639922"></span>Tareas entregadas</span>
-          <span><span class="lln" style="border-top:2px dashed rgba(120,120,120,0.5)"></span>Tendencia</span>
+        <!-- GAP General -->
+        <div class="section" id="sec-gap-general">
+          <div class="section-header"><span class="section-title">GAP General</span><span class="section-count" id="cgap-general-count">217 registros</span></div>
+          <div class="legend">
+            <span><span class="lsq" style="background:rgba(24,95,165,0.25);border:1px solid rgba(24,95,165,0.5)"></span>Total por sprint</span>
+            <span><span class="lln" style="border-top:2px solid #639922"></span>Tareas entregadas</span>
+            <span><span class="lln" style="border-top:2px dashed #aaa"></span>Tendencia</span>
+          </div>
+          <div class="pct-row" id="pct-general"><span class="pct-pill"><span style="color:#888">Q1-S1</span><span style="font-weight:500;color:#3B6D11">100%</span></span><span class="pct-pill"><span style="color:#888">Q1-S2</span><span style="font-weight:500;color:#3B6D11">100%</span></span><span class="pct-pill"><span style="color:#888">Q1-S3</span><span style="font-weight:500;color:#854F0B">89%</span></span><span class="pct-pill"><span style="color:#888">Q1-S4</span><span style="font-weight:500;color:#854F0B">88%</span></span><span class="pct-pill"><span style="color:#888">Q1-S5</span><span style="font-weight:500;color:#3B6D11">96%</span></span><span class="pct-pill"><span style="color:#888">Q1-S6</span><span style="font-weight:500;color:#854F0B">85%</span></span><span class="pct-pill"><span style="color:#888">Q2-S1</span><span style="font-weight:500;color:#3B6D11">95%</span></span><span class="pct-pill"><span style="color:#888">Q2-S2</span><span style="font-weight:500;color:#3B6D11">93%</span></span><span class="pct-pill"><span style="color:#888">Q2-S3</span><span style="font-weight:500;color:#3B6D11">94%</span></span><span class="pct-pill"><span style="color:#888">Q2-S4</span><span style="font-weight:500;color:#854F0B">72%</span></span><span class="pct-pill"><span style="color:#888">Q2-S5</span><span style="font-weight:500;color:#A32D2D">67%</span></span><span class="pct-pill"><span style="color:#888">Q2-S6</span><span style="font-weight:500;color:#A32D2D">28%</span></span></div>
+          <div class="chart-wrap" style="height:270px"><canvas id="cgap_general" height="270" style="display: block; box-sizing: border-box; height: 270px; width: 850px;" width="850"></canvas></div>
         </div>
-        <div class="pct-row" id="pct-general"><span class="pct-pill"><span style="color:#888">Q1-S1</span><span style="font-weight:500;color:#3B6D11">100%</span></span><span class="pct-pill"><span style="color:#888">Q1-S2</span><span style="font-weight:500;color:#3B6D11">100%</span></span><span class="pct-pill"><span style="color:#888">Q1-S3</span><span style="font-weight:500;color:#854F0B">89%</span></span><span class="pct-pill"><span style="color:#888">Q1-S4</span><span style="font-weight:500;color:#854F0B">88%</span></span><span class="pct-pill"><span style="color:#888">Q1-S5</span><span style="font-weight:500;color:#3B6D11">96%</span></span><span class="pct-pill"><span style="color:#888">Q1-S6</span><span style="font-weight:500;color:#854F0B">85%</span></span><span class="pct-pill"><span style="color:#888">Q2-S1</span><span style="font-weight:500;color:#3B6D11">95%</span></span><span class="pct-pill"><span style="color:#888">Q2-S2</span><span style="font-weight:500;color:#3B6D11">93%</span></span><span class="pct-pill"><span style="color:#888">Q2-S3</span><span style="font-weight:500;color:#3B6D11">94%</span></span><span class="pct-pill"><span style="color:#888">Q2-S4</span><span style="font-weight:500;color:#854F0B">72%</span></span><span class="pct-pill"><span style="color:#888">Q2-S5</span><span style="font-weight:500;color:#A32D2D">67%</span></span><span class="pct-pill"><span style="color:#888">Q2-S6</span><span style="font-weight:500;color:#A32D2D">28%</span></span></div>
-        <div style="position:relative;width:100%;height:270px"><canvas id="cgap_general" width="850" height="270" style="display: block; box-sizing: border-box; height: 270px; width: 850px;"></canvas></div>
-      </div>
 
-      <!-- Estatus por sprint -->
-      <div class="section" id="s-eps">
-        <div class="section-header"><span class="section-title">Estatus general por sprint</span><span class="section-count">216 registros</span></div>
-        <div class="legend">
-          <span><span class="lsq" style="background:rgba(24,95,165,0.3)"></span>Q1</span>
-          <span><span class="lsq" style="background:rgba(29,158,117,0.3)"></span>Q2</span>
-          <span><span class="lln" style="border-top:2px solid #639922"></span>Accepted</span>
-          <span><span class="lln" style="border-top:2px dashed #E24B4A"></span>Discarded</span>
-          <span><span class="lln" style="border-top:2px dashed #EF9F27"></span>In Progress</span>
-          <span><span class="lln" style="border-top:2px dotted #7F77DD"></span>Blocked</span>
-          <span><span class="lln" style="border-top:2px dotted #185FA5"></span>Ready To Verify</span>
-          <span><span class="lln" style="border-top:2px dotted #1D9E75"></span>Analysing</span>
+        <!-- Estatus por sprint -->
+        <div class="section" id="sec-eps">
+          <div class="section-header"><span class="section-title">Estatus general por sprint</span><span class="section-count" id="c1-count">216 registros</span></div>
+          <div class="legend">
+            <span><span class="lsq" style="background:rgba(24,95,165,0.3)"></span>Q1</span>
+            <span><span class="lsq" style="background:rgba(29,158,117,0.3)"></span>Q2</span>
+            <span><span class="lln" style="border-top:2px solid #639922"></span>Accepted</span>
+            <span><span class="lln" style="border-top:2px dashed #E24B4A"></span>Discarded</span>
+            <span><span class="lln" style="border-top:2px dashed #EF9F27"></span>In Progress</span>
+            <span><span class="lln" style="border-top:2px dotted #7F77DD"></span>Blocked</span>
+          </div>
+          <div class="chart-wrap" style="height:260px"><canvas id="c1" height="260" style="display: block; box-sizing: border-box; height: 260px; width: 850px;" width="850"></canvas></div>
         </div>
-        <div style="position:relative;width:100%;height:260px"><canvas id="c1" width="850" height="260" style="display: block; box-sizing: border-box; height: 260px; width: 850px;"></canvas></div>
-      </div>
 
-      <!-- GAP por sprint -->
-      <div class="section" id="s-gap-s">
-        <div class="section-header"><span class="section-title">GAP por sprint</span><span class="section-count">216 registros</span></div>
-        <div class="legend">
-          <span><span class="lsq" style="background:rgba(24,95,165,0.25);border:1px solid rgba(24,95,165,0.5)"></span>Total por sprint</span>
-          <span><span class="lln" style="border-top:2px solid #639922"></span>Tareas entregadas</span>
-          <span><span class="lln" style="border-top:2px dashed rgba(120,120,120,0.5)"></span>Tendencia</span>
+        <!-- GAP por sprint -->
+        <div class="section" id="sec-gap-sprint">
+          <div class="section-header"><span class="section-title">GAP por sprint</span><span class="section-count" id="cgap-sprint-count">216 registros</span></div>
+          <div class="legend">
+            <span><span class="lsq" style="background:rgba(24,95,165,0.25);border:1px solid rgba(24,95,165,0.5)"></span>Total por sprint</span>
+            <span><span class="lln" style="border-top:2px solid #639922"></span>Tareas entregadas</span>
+            <span><span class="lln" style="border-top:2px dashed #aaa"></span>Tendencia</span>
+          </div>
+          <div class="pct-row" id="pct-sprint"><span class="pct-pill"><span style="color:#888">Q1-S1</span><span style="font-weight:500;color:#3B6D11">100%</span></span><span class="pct-pill"><span style="color:#888">Q1-S2</span><span style="font-weight:500;color:#3B6D11">100%</span></span><span class="pct-pill"><span style="color:#888">Q1-S3</span><span style="font-weight:500;color:#854F0B">89%</span></span><span class="pct-pill"><span style="color:#888">Q1-S4</span><span style="font-weight:500;color:#854F0B">88%</span></span><span class="pct-pill"><span style="color:#888">Q1-S5</span><span style="font-weight:500;color:#3B6D11">96%</span></span><span class="pct-pill"><span style="color:#888">Q1-S6</span><span style="font-weight:500;color:#854F0B">85%</span></span><span class="pct-pill"><span style="color:#888">Q2-S1</span><span style="font-weight:500;color:#3B6D11">95%</span></span><span class="pct-pill"><span style="color:#888">Q2-S2</span><span style="font-weight:500;color:#3B6D11">93%</span></span><span class="pct-pill"><span style="color:#888">Q2-S3</span><span style="font-weight:500;color:#3B6D11">94%</span></span><span class="pct-pill"><span style="color:#888">Q2-S4</span><span style="font-weight:500;color:#854F0B">72%</span></span><span class="pct-pill"><span style="color:#888">Q2-S5</span><span style="font-weight:500;color:#A32D2D">67%</span></span><span class="pct-pill"><span style="color:#888">Q2-S6</span><span style="font-weight:500;color:#A32D2D">26%</span></span></div>
+          <div class="chart-wrap" style="height:270px"><canvas id="cgap_sprint" height="270" style="display: block; box-sizing: border-box; height: 270px; width: 850px;" width="850"></canvas></div>
         </div>
-        <div class="pct-row" id="pct-sprint"><span class="pct-pill"><span style="color:#888">Q1-S1</span><span style="font-weight:500;color:#3B6D11">100%</span></span><span class="pct-pill"><span style="color:#888">Q1-S2</span><span style="font-weight:500;color:#3B6D11">100%</span></span><span class="pct-pill"><span style="color:#888">Q1-S3</span><span style="font-weight:500;color:#854F0B">89%</span></span><span class="pct-pill"><span style="color:#888">Q1-S4</span><span style="font-weight:500;color:#854F0B">88%</span></span><span class="pct-pill"><span style="color:#888">Q1-S5</span><span style="font-weight:500;color:#3B6D11">96%</span></span><span class="pct-pill"><span style="color:#888">Q1-S6</span><span style="font-weight:500;color:#854F0B">85%</span></span><span class="pct-pill"><span style="color:#888">Q2-S1</span><span style="font-weight:500;color:#3B6D11">95%</span></span><span class="pct-pill"><span style="color:#888">Q2-S2</span><span style="font-weight:500;color:#3B6D11">93%</span></span><span class="pct-pill"><span style="color:#888">Q2-S3</span><span style="font-weight:500;color:#3B6D11">94%</span></span><span class="pct-pill"><span style="color:#888">Q2-S4</span><span style="font-weight:500;color:#A32D2D">67%</span></span><span class="pct-pill"><span style="color:#888">Q2-S5</span><span style="font-weight:500;color:#A32D2D">67%</span></span><span class="pct-pill"><span style="color:#888">Q2-S6</span><span style="font-weight:500;color:#A32D2D">26%</span></span></div>
-        <div style="position:relative;width:100%;height:270px"><canvas id="cgap_sprint" width="850" height="270" style="display: block; box-sizing: border-box; height: 270px; width: 850px;"></canvas></div>
-      </div>
 
-      <!-- Análisis -->
-      <div class="section" id="s-analisis">
-        <div class="section-header"><span class="section-title">Análisis</span><span class="section-count">135 registros</span></div>
-        <div class="legend">
-          <span><span class="lsq" style="background:rgba(24,95,165,0.3)"></span>Q1</span>
-          <span><span class="lsq" style="background:rgba(29,158,117,0.3)"></span>Q2</span>
-          <span><span class="lln" style="border-top:2px solid #639922"></span>Accepted</span>
-          <span><span class="lln" style="border-top:2px dashed #E24B4A"></span>Discarded</span>
-          <span><span class="lln" style="border-top:2px dashed #185FA5"></span>Ready To Verify</span>
-          <span><span class="lln" style="border-top:2px dashed #EF9F27"></span>In Progress</span>
-          <span><span class="lln" style="border-top:2px dotted #7F77DD"></span>Analysing</span>
-          <span><span class="lln" style="border-top:2px dotted #888"></span>New</span>
+        <!-- Análisis -->
+        <div class="section" id="sec-analisis">
+          <div class="section-header"><span class="section-title">Análisis</span><span class="section-count" id="c2-count">135 registros</span></div>
+          <div class="legend">
+            <span><span class="lsq" style="background:rgba(24,95,165,0.3)"></span>Q1</span>
+            <span><span class="lsq" style="background:rgba(29,158,117,0.3)"></span>Q2</span>
+            <span><span class="lln" style="border-top:2px solid #639922"></span>Accepted</span>
+            <span><span class="lln" style="border-top:2px dashed #E24B4A"></span>Discarded</span>
+            <span><span class="lln" style="border-top:2px dashed #185FA5"></span>Ready To Verify</span>
+            <span><span class="lln" style="border-top:2px dashed #EF9F27"></span>In Progress</span>
+            <span><span class="lln" style="border-top:2px dotted #7F77DD"></span>Analysing</span>
+          </div>
+          <div class="chart-wrap" style="height:260px"><canvas id="c2" height="260" style="display: block; box-sizing: border-box; height: 260px; width: 850px;" width="850"></canvas></div>
         </div>
-        <div style="position:relative;width:100%;height:260px"><canvas id="c2" width="850" height="260" style="display: block; box-sizing: border-box; height: 260px; width: 850px;"></canvas></div>
-      </div>
 
-      <!-- Validación -->
-      <div class="section" id="s-validacion">
-        <div class="section-header"><span class="section-title">Validación</span><span class="section-count">70 registros</span></div>
-        <div class="legend">
-          <span><span class="lsq" style="background:rgba(24,95,165,0.3)"></span>Q1</span>
-          <span><span class="lsq" style="background:rgba(29,158,117,0.3)"></span>Q2</span>
-          <span><span class="lln" style="border-top:2px solid #639922"></span>Accepted</span>
-          <span><span class="lln" style="border-top:2px dashed #E24B4A"></span>Discarded</span>
-          <span><span class="lln" style="border-top:2px dashed #EF9F27"></span>In Progress</span>
-          <span><span class="lln" style="border-top:2px dotted #7F77DD"></span>Blocked</span>
-          <span><span class="lln" style="border-top:2px dotted #185FA5"></span>Analysing</span>
-          <span><span class="lln" style="border-top:2px dotted #888"></span>New</span>
+        <!-- Validación -->
+        <div class="section" id="sec-validacion">
+          <div class="section-header"><span class="section-title">Validación</span><span class="section-count" id="c3-count">70 registros</span></div>
+          <div class="legend">
+            <span><span class="lsq" style="background:rgba(24,95,165,0.3)"></span>Q1</span>
+            <span><span class="lsq" style="background:rgba(29,158,117,0.3)"></span>Q2</span>
+            <span><span class="lln" style="border-top:2px solid #639922"></span>Accepted</span>
+            <span><span class="lln" style="border-top:2px dashed #E24B4A"></span>Discarded</span>
+            <span><span class="lln" style="border-top:2px dashed #EF9F27"></span>In Progress</span>
+            <span><span class="lln" style="border-top:2px dotted #7F77DD"></span>Blocked</span>
+            <span><span class="lln" style="border-top:2px dotted #185FA5"></span>Analysing</span>
+          </div>
+          <div class="chart-wrap" style="height:260px"><canvas id="c3" height="260" style="display: block; box-sizing: border-box; height: 260px; width: 850px;" width="850"></canvas></div>
         </div>
-        <div style="position:relative;width:100%;height:260px"><canvas id="c3" width="850" height="260" style="display: block; box-sizing: border-box; height: 260px; width: 850px;"></canvas></div>
-      </div>
 
-      <!-- Equipo local -->
-      <div class="section" id="s-local">
-        <div class="section-header"><span class="section-title">Equipo local — estado por sprint</span><span class="section-count" id="eq-badge">134 registros</span></div>
-        <div class="filter-row">
-          <button class="fbtn active" onclick="filterEq(this,'all')">Todos</button>
-          <button class="fbtn" onclick="filterEq(this,'oscar')">Oscar J. Vega</button>
-          <button class="fbtn" onclick="filterEq(this,'jose')">Jose C. Silva</button>
-          <button class="fbtn" onclick="filterEq(this,'carlos')">Carlos E. Manzano</button>
-          <button class="fbtn" onclick="filterEq(this,'john')">John A. Alfonso</button>
+        <!-- Equipo local -->
+        <div class="section" id="sec-local">
+          <div class="section-header"><span class="section-title">Equipo local — estado por sprint</span><span class="section-count" id="eq-badge">140 registros</span></div>
+          <div class="filter-row" id="eq-filters"><button class="fbtn active" onclick="filterEq(this,'all')">Todos</button><button class="fbtn" onclick="filterEq(this,'ANDRES FELIPE DEOSSA SALAVERRIA')">ANDRES FELIPE</button><button class="fbtn" onclick="filterEq(this,'JOHN ALEJANDRO ALFONSO NIÑO')">JOHN ALEJANDRO</button><button class="fbtn" onclick="filterEq(this,'OSCAR JAVIER VEGA BELLO')">OSCAR JAVIER</button><button class="fbtn" onclick="filterEq(this,'CARLOS EDUARDO MANZANO VELAZQUEZ')">CARLOS EDUARDO</button><button class="fbtn" onclick="filterEq(this,'JOSE CARLOS SILVA SILVA')">JOSE CARLOS</button></div>
+          <div class="legend" id="eq-legend"><span><span class="lsq" style="background:#185FA5"></span>ANDRES FELIPE</span><span><span class="lsq" style="background:#1D9E75"></span>JOHN ALEJANDRO</span><span><span class="lsq" style="background:#EF9F27"></span>OSCAR JAVIER</span><span><span class="lsq" style="background:#7F77DD"></span>CARLOS EDUARDO</span><span><span class="lsq" style="background:#D85A30"></span>JOSE CARLOS</span></div>
+          <div class="chart-wrap" style="height:280px"><canvas id="c4" height="280" style="display: block; box-sizing: border-box; height: 280px; width: 850px;" width="850"></canvas></div>
         </div>
-        <div class="legend" id="eq-legend"><span><span class="lsq" style="background:#185FA5"></span>Oscar J. Vega</span><span><span class="lsq" style="background:#1D9E75"></span>Jose C. Silva</span><span><span class="lsq" style="background:#EF9F27"></span>Carlos E. Manzano</span><span><span class="lsq" style="background:#7F77DD"></span>John A. Alfonso</span></div>
-        <div style="position:relative;width:100%;height:280px"><canvas id="c4" width="850" height="280" style="display: block; box-sizing: border-box; height: 280px; width: 850px;"></canvas></div>
-      </div>
 
-      <!-- Retraso análisis -->
-      <div class="section" id="s-delay-a">
-        <div class="section-header"><span class="section-title">Retraso en tareas de análisis</span><span class="section-count">101 tareas con retraso</span></div>
-        <p class="chart-sub">Número de sprints de retraso (homework delay)</p>
-        <div style="position:relative;width:100%;height:240px"><canvas id="ca" width="850" height="240" style="display: block; box-sizing: border-box; height: 240px; width: 850px;"></canvas></div>
-      </div>
+        <!-- Retraso análisis -->
+        <div class="section" id="sec-delay-a">
+          <div class="section-header"><span class="section-title">Retraso en tareas de análisis</span><span class="section-count" id="ca-count">101 tareas con retraso</span></div>
+          <p class="chart-sub">Número de sprints de retraso (homework delay)</p>
+          <div class="chart-wrap" style="height:240px"><canvas id="ca" height="240" style="display: block; box-sizing: border-box; height: 240px; width: 850px;" width="850"></canvas></div>
+        </div>
 
-      <!-- Retraso validación -->
-      <div class="section" id="s-delay-v">
-        <div class="section-header"><span class="section-title">Retraso en tareas de validación</span><span class="section-count">49 tareas con retraso</span></div>
-        <p class="chart-sub">Número de sprints de retraso (homework delay)</p>
-        <div style="position:relative;width:100%;height:240px"><canvas id="cv" width="850" height="240" style="display: block; box-sizing: border-box; height: 240px; width: 850px;"></canvas></div>
-      </div>
+        <!-- Retraso validación -->
+        <div class="section" id="sec-delay-v">
+          <div class="section-header"><span class="section-title">Retraso en tareas de validación</span><span class="section-count" id="cv-count">49 tareas con retraso</span></div>
+          <p class="chart-sub">Número de sprints de retraso (homework delay)</p>
+          <div class="chart-wrap" style="height:240px"><canvas id="cv" height="240" style="display: block; box-sizing: border-box; height: 240px; width: 850px;" width="850"></canvas></div>
+        </div>
 
+      </div>
     </div>
   </div>
 </div>
-<footer>Dashboard de sprints · Q1-S1 → Q2-S6 · Generado el 22 Jun 2026 · hoja estatus general</footer>
+
+<footer>Dashboard de sprints · datos procesados localmente en tu navegador · nunca se envían a ningún servidor</footer>
 
 <script>
 Chart.register(ChartDataLabels);
 
-function navTo(id,btn){
+const SPRINT_ORDER=['Q1-S1','Q1-S2','Q1-S3','Q1-S4','Q1-S5','Q1-S6','Q2-S1','Q2-S2','Q2-S3','Q2-S4','Q2-S5','Q2-S6'];
+const COLORS={'Accepted':'#639922','Discarded':'#E24B4A','In Progress':'#EF9F27','Blocked':'#7F77DD','Ready To Verify':'#185FA5','Analysing':'#1D9E75','To Rework':'#D85A30','Test':'#888'};
+const PERSON_COLORS=['#185FA5','#1D9E75','#EF9F27','#7F77DD','#D85A30','#639922'];
+
+let charts={}, prevData=null, eqData={}, eqSprints=[], currentPersona='all';
+
+function scrollTo(id){
   document.getElementById(id).scrollIntoView({behavior:'smooth'});
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes(id))b.classList.add('active');});
 }
-const obs=new IntersectionObserver(entries=>{
-  entries.forEach(e=>{if(e.isIntersecting){
-    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes(e.target.id))b.classList.add('active');});
-  }});
-},{rootMargin:'-25% 0px -65% 0px'});
-['s-metrics','s-equipo','s-eg','s-gap-g','s-eps','s-gap-s','s-analisis','s-validacion','s-local','s-delay-a','s-delay-v'].forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el);});
 
-const labels=['Q1-S1','Q1-S2','Q1-S3','Q1-S4','Q1-S5','Q1-S6','Q2-S1','Q2-S2','Q2-S3','Q2-S4','Q2-S5','Q2-S6'];
+// Intersection observer para nav activo
+function setupNavObserver(){
+  const sections=['sec-metricas','sec-equipo','sec-eg','sec-gap-general','sec-eps','sec-gap-sprint','sec-analisis','sec-validacion','sec-local','sec-delay-a','sec-delay-v'];
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes(e.target.id))b.classList.add('active');});
+      }
+    });
+  },{rootMargin:'-30% 0px -60% 0px'});
+  sections.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el);});
+}
+
+function sprintKey(s){const m=s.match(/Q(\d+)-S(\d+)/);return m?parseInt(m[1])*100+parseInt(m[2]):9999;}
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
 const q1c='rgba(24,95,165,0.2)',q2c='rgba(29,158,117,0.2)',q1b='rgba(24,95,165,0.45)',q2b='rgba(29,158,117,0.45)';
-const barBg=labels.map(l=>l.startsWith('Q1')?q1c:q2c);
-const barBd=labels.map(l=>l.startsWith('Q1')?q1b:q2b);
+function sprintBg(labels){return labels.map(l=>l.startsWith('Q1')?q1c:q2c);}
+function sprintBd(labels){return labels.map(l=>l.startsWith('Q1')?q1b:q2b);}
 
-function barDs(data){return{type:'bar',label:'Total',data,backgroundColor:barBg,borderColor:barBd,borderWidth:1,borderRadius:4,borderSkipped:false,yAxisID:'y',order:1,datalabels:{anchor:'end',align:'end',color:'rgba(100,100,100,0.8)',font:{size:10,weight:'500'},formatter:v=>v}};}
-function lineDs(label,data,color,dash=[]){return{type:'line',label,data,borderColor:color,backgroundColor:color,borderWidth:2,pointRadius:ctx=>data[ctx.dataIndex]>0?3:0,pointHoverRadius:5,borderDash:dash,tension:0.3,yAxisID:'y',order:0,spanGaps:false,segment:{borderColor:ctx=>(data[ctx.p0DataIndex]===0||data[ctx.p1DataIndex]===0)?'transparent':color},datalabels:{display:ctx=>data[ctx.dataIndex]>0,align:'top',anchor:'top',color,font:{size:10,weight:'500'},formatter:v=>v}};}
+function barDs(labels,data){return{type:'bar',label:'Total',data,backgroundColor:sprintBg(labels),borderColor:sprintBd(labels),borderWidth:1,borderRadius:4,borderSkipped:false,yAxisID:'y',order:1,datalabels:{anchor:'end',align:'end',color:'rgba(100,100,100,0.8)',font:{size:10,weight:'500'},formatter:v=>v||''}};}
+function lineDs(label,data,color,dash=[]){return{type:'line',label,data,borderColor:color,backgroundColor:color,borderWidth:2,pointRadius:ctx=>data[ctx.dataIndex]>0?3:0,pointHoverRadius:6,borderDash:dash,tension:0.3,yAxisID:'y',order:0,spanGaps:false,segment:{borderColor:ctx=>(data[ctx.p0DataIndex]===0||data[ctx.p1DataIndex]===0)?'transparent':color},datalabels:{display:ctx=>data[ctx.dataIndex]>0,align:'top',anchor:'top',color,font:{size:10,weight:'500'},formatter:v=>v}};}
 const opts=step=>({responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},plugins:{legend:{display:false},datalabels:{},tooltip:{callbacks:{footer:items=>'Total: '+items.reduce((s,i)=>s+i.parsed.y,0)}}},scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:11}},grid:{display:false}},y:{beginAtZero:true,ticks:{stepSize:step,font:{size:11}},grid:{color:'rgba(0,0,0,0.06)'}}}});
 
+// Línea de tendencia lineal
 function trendLine(data){
-  const valid=data.map((v,i)=>({x:i,y:v})).filter(p=>p.y>0);
-  if(valid.length<2)return Array(data.length).fill(null);
-  const n=valid.length,sx=valid.reduce((s,p)=>s+p.x,0),sy=valid.reduce((s,p)=>s+p.y,0);
-  const sxy=valid.reduce((s,p)=>s+p.x*p.y,0),sx2=valid.reduce((s,p)=>s+p.x*p.x,0);
-  const m=(n*sxy-sx*sy)/(n*sx2-sx*sx),b=(sy-m*sx)/n;
-  return Array.from({length:data.length},(_,i)=>Math.max(0,parseFloat((m*i+b).toFixed(1))));
+  const n=data.length, validPts=data.map((v,i)=>({x:i,y:v})).filter(p=>p.y>0);
+  if(validPts.length<2)return Array(n).fill(null);
+  const sumX=validPts.reduce((s,p)=>s+p.x,0), sumY=validPts.reduce((s,p)=>s+p.y,0);
+  const sumXY=validPts.reduce((s,p)=>s+p.x*p.y,0), sumX2=validPts.reduce((s,p)=>s+p.x*p.x,0);
+  const nv=validPts.length, m=(nv*sumXY-sumX*sumY)/(nv*sumX2-sumX*sumX), b=(sumY-m*sumX)/nv;
+  return Array.from({length:n},(_,i)=>Math.max(0,Math.round(m*i+b)));
 }
 
-function buildGap(canvasId,legendId,totales,entregadas){
+function buildGap(canvasId,legendId,countId,sprints,totales,entregadas){
   const pcts=totales.map((t,i)=>t>0?Math.round(entregadas[i]/t*100):0);
+  document.getElementById(countId).textContent=totales.reduce((a,b)=>a+b,0)+' registros';
   const trend=trendLine(entregadas);
-  new Chart(document.getElementById(canvasId),{data:{labels,datasets:[
-    barDs(totales),
-    lineDs('Tareas entregadas',entregadas,'#639922'),
-    {type:'line',label:'Tendencia',data:trend,borderColor:'rgba(120,120,120,0.45)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:0,yAxisID:'y',order:0,datalabels:{display:false}},
-  ]},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:24}},plugins:{legend:{display:false},datalabels:{},tooltip:{callbacks:{footer:items=>{const i=items[0].dataIndex;return`Entregadas: ${entregadas[i]}/${totales[i]} (${pcts[i]}%)\nTendencia: ${trend[i]}`;}}}},scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:11}},grid:{display:false}},y:{beginAtZero:true,ticks:{stepSize:5,font:{size:11}},grid:{color:'rgba(0,0,0,0.06)'}}}}});
-  document.getElementById(legendId).innerHTML=labels.map((sp,i)=>{
+  destroyChart(canvasId);
+  charts[canvasId]=new Chart(document.getElementById(canvasId),{
+    data:{labels:sprints,datasets:[
+      barDs(sprints,totales),
+      lineDs('Tareas entregadas',entregadas,'#639922'),
+      {type:'line',label:'Tendencia',data:trend,borderColor:'rgba(100,100,100,0.4)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:0,yAxisID:'y',order:0,datalabels:{display:false}},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:24}},plugins:{legend:{display:false},datalabels:{},tooltip:{callbacks:{footer:items=>{const i=items[0].dataIndex;return`Entregadas: ${entregadas[i]}/${totales[i]} (${pcts[i]}%)\nTendencia: ${trend[i]}`;}}}},scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:11}},grid:{display:false}},y:{beginAtZero:true,ticks:{stepSize:5,font:{size:11}},grid:{color:'rgba(0,0,0,0.06)'}}}}
+  });
+  document.getElementById(legendId).innerHTML=sprints.map((sp,i)=>{
     const pct=pcts[i],color=pct>=90?'#3B6D11':pct>=70?'#854F0B':'#A32D2D';
     return`<span class="pct-pill"><span style="color:#888">${sp}</span><span style="font-weight:500;color:${color}">${pct}%</span></span>`;
   }).join('');
 }
 
-// Estatus general (hoja estatus general)
-new Chart(document.getElementById('c1b'),{data:{labels,datasets:[
-  barDs([10,9,9,17,23,20,19,15,18,18,12,47]),
-  lineDs('Accepted',   [9,8,8,14,14,14,14,12,13,7,3,4],'#639922'),
-  lineDs('Discarded',  [1,1,0,1,8,3,4,2,1,5,1,4],'#E24B4A',[6,3]),
-  lineDs('In Progress',[0,0,0,2,0,0,0,0,0,2,0,6],'#EF9F27',[4,4]),
-  lineDs('Blocked',    [0,0,1,0,1,3,1,0,0,1,3,3],'#7F77DD',[2,3]),
-  lineDs('Ready To Verify',[0,0,0,0,0,0,0,0,3,1,4,5],'#185FA5',[4,4]),
-  lineDs('Analysing',  [0,0,0,0,0,0,0,0,0,1,0,13],'#1D9E75',[2,3]),
-]},options:opts(5)});
+function delta(curr,prev,id,invertGood=false){
+  if(prev===null||prev===undefined){document.getElementById(id).textContent='';return;}
+  const diff=curr-prev;
+  if(diff===0){document.getElementById(id).textContent='Sin cambio';document.getElementById(id).className='metric-delta neutral';return;}
+  const up=diff>0, good=invertGood?!up:up;
+  document.getElementById(id).textContent=(up?'▲ +':'▼ ')+diff+' vs anterior';
+  document.getElementById(id).className='metric-delta '+(good?'up':'down');
+}
 
-// GAP General
-buildGap('cgap_general','pct-general',
-  [10,9,9,17,23,20,19,15,18,18,12,47],
-  [10,9,8,15,22,17,18,14,17,13,8,13]
-);
+function spVals(rows,spList,estado){return spList.map(sp=>rows.filter(r=>r.sprint===sp&&r.estado===estado).length);}
+function spTotal(rows,spList){return spList.map(sp=>rows.filter(r=>r.sprint===sp).length);}
 
-// Estatus por sprint (hoja estatus por spring)
-new Chart(document.getElementById('c1'),{data:{labels,datasets:[
-  barDs([10,9,9,17,23,20,19,15,18,18,12,46]),
-  lineDs('Accepted',   [9,8,8,14,14,14,14,12,13,7,3,4],'#639922'),
-  lineDs('Discarded',  [1,1,0,1,8,3,4,2,1,5,1,3],'#E24B4A',[6,3]),
-  lineDs('In Progress',[0,0,0,2,0,0,0,0,0,2,0,6],'#EF9F27',[4,4]),
-  lineDs('Blocked',    [0,0,1,0,1,3,1,0,0,1,3,3],'#7F77DD',[2,3]),
-  lineDs('Ready To Verify',[0,0,0,0,0,0,0,0,3,1,4,5],'#185FA5',[4,4]),
-  lineDs('Analysing',  [0,0,0,0,0,0,0,0,0,1,0,13],'#1D9E75',[2,3]),
-]},options:opts(5)});
+function findSheet(wb,keywords){
+  const names=Object.keys(wb.Sheets);
+  for(const kw of keywords){const found=names.find(n=>n.toLowerCase().includes(kw.toLowerCase()));if(found)return found;}
+  return null;
+}
 
-// GAP por sprint
-buildGap('cgap_sprint','pct-sprint',
-  [10,9,9,17,23,20,19,15,18,18,12,46],
-  [10,9,8,15,22,17,18,14,17,12,8,12]
-);
+function getRows(wb,keywords){
+  const sheetName=findSheet(wb,keywords);
+  if(!sheetName)return{rows:[],sheetName:null};
+  const sheet=wb.Sheets[sheetName];
+  const data=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
+  if(data.length<2)return{rows:[],sheetName};
+  const header=data[0].map(h=>String(h).trim().toLowerCase());
+  const idx={
+    sprint:header.findIndex(h=>h.includes('spring')||h.includes('sprint')),
+    estado:header.findIndex(h=>h==='estado'),
+    resumen:header.findIndex(h=>h==='resumen'),
+    persona:header.findIndex(h=>h.includes('persona')),
+    hw:header.findIndex(h=>h.includes('homework')),
+  };
+  const rows=data.slice(1).map(row=>({
+    sprint:String(row[idx.sprint]||'').trim(),
+    estado:String(row[idx.estado]||'').trim(),
+    resumen:String(row[idx.resumen]||'').trim(),
+    persona:String(row[idx.persona]||'').trim(),
+    hw:String(row[idx.hw]||'').trim(),
+  }));
+  return{rows,sheetName};
+}
 
-// Análisis
-new Chart(document.getElementById('c2'),{data:{labels,datasets:[
-  barDs([6,4,5,8,12,14,14,12,15,13,7,25]),
-  lineDs('Accepted',   [5,3,4,7,6,11,10,9,10,4,1,1],'#639922'),
-  lineDs('Discarded',  [1,1,1,1,6,3,4,2,1,4,1,2],'#E24B4A',[6,3]),
-  lineDs('Ready To Verify',[0,0,0,0,0,0,0,0,3,1,4,5],'#185FA5',[4,4]),
-  lineDs('In Progress',[0,0,0,0,0,0,0,0,0,2,0,5],'#EF9F27',[2,4]),
-  lineDs('Analysing',  [0,0,0,0,0,0,0,0,0,1,0,4],'#7F77DD',[2,3]),
-  lineDs('New',        [0,0,0,0,0,0,0,0,0,0,0,7],'#888',[3,3]),
-]},options:opts(3)});
+function getEquipo(wb){
+  const sheetName=findSheet(wb,['equipo','team']);
+  if(!sheetName)return new Set();
+  const data=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,defval:''});
+  const local=new Set();
+  data.slice(1).forEach(row=>{const v=String(row[0]||'').trim();if(v&&v.toLowerCase()!=='local')local.add(v.toUpperCase());});
+  return local;
+}
 
-// Validación
-new Chart(document.getElementById('c3'),{data:{labels,datasets:[
-  barDs([3,4,3,8,11,6,3,2,3,5,5,17]),
-  lineDs('Accepted',   [3,4,3,6,8,3,3,2,3,3,2,3],'#639922'),
-  lineDs('Discarded',  [0,0,0,0,2,0,0,0,0,1,0,2],'#E24B4A',[6,3]),
-  lineDs('In Progress',[0,0,0,2,0,0,0,0,0,0,0,1],'#EF9F27',[2,4]),
-  lineDs('Blocked',    [0,0,0,0,1,3,0,0,0,1,3,3],'#7F77DD',[4,4]),
-  lineDs('Analysing',  [0,0,0,0,0,0,0,0,0,0,0,5],'#185FA5',[2,3]),
-  lineDs('New',        [0,0,0,0,0,0,0,0,0,0,0,2],'#888',[3,3]),
-]},options:opts(2)});
+function loadFile(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    processData(wb,file.name);
+    document.getElementById('upload-screen').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+    document.getElementById('sidebar').style.display='block';
+    document.getElementById('header-upload-label').classList.add('loaded');
+    document.getElementById('file-name').textContent=file.name;
+    setupNavObserver();
+  };
+  reader.readAsArrayBuffer(file);
+}
 
-// Equipo local
-const TOTALS={all:134,oscar:100,jose:14,carlos:7,john:13};
-const EQDATA={
-  all:{
-    'Oscar J. Vega':{data:[6,7,5,12,8,14,8,8,7,6,5,14],color:'#185FA5'},
-    'Jose C. Silva': {data:[0,0,0,0,1,0,1,3,2,4,2,1], color:'#1D9E75'},
-    'Carlos E. Manzano':{data:[0,0,0,0,0,0,0,0,2,1,1,3],color:'#EF9F27'},
-    'John A. Alfonso':{data:[3,0,2,1,3,0,0,0,0,0,0,4],color:'#7F77DD'},
-  },
-  oscar:{
-    'Accepted':      {data:[5,6,4,9,7,11,6,7,5,4,1,3],color:'#639922'},
-    'Discarded':     {data:[1,1,0,1,1,2,2,1,1,2,0,2],color:'#E24B4A'},
-    'Blocked':       {data:[0,0,1,0,0,1,0,0,0,0,2,1],color:'#7F77DD'},
-    'In Progress':   {data:[0,0,0,2,0,0,0,0,0,0,0,0],color:'#EF9F27'},
-    'Ready To Verify':{data:[0,0,0,0,0,0,0,0,1,0,2,4],color:'#185FA5'},
-    'Analysing':     {data:[0,0,0,0,0,0,0,0,0,0,0,3],color:'#1D9E75'},
-    'New':           {data:[0,0,0,0,0,0,0,0,0,0,0,1],color:'#888'},
-  },
-  jose:{
-    'Accepted':  {data:[0,0,0,0,0,0,1,3,1,2,0,0],color:'#639922'},
-    'Discarded': {data:[0,0,0,0,1,0,0,0,0,2,1,0],color:'#E24B4A'},
-    'To Rework': {data:[0,0,0,0,0,0,0,0,1,0,1,0],color:'#D85A30'},
-    'Analysing': {data:[0,0,0,0,0,0,0,0,0,0,0,1],color:'#1D9E75'},
-  },
-  carlos:{
-    'Ready To Verify':{data:[0,0,0,0,0,0,0,0,2,1,1,0],color:'#185FA5'},
-    'Analysing':      {data:[0,0,0,0,0,0,0,0,0,0,0,2],color:'#1D9E75'},
-    'In Progress':    {data:[0,0,0,0,0,0,0,0,0,0,0,1],color:'#EF9F27'},
-  },
-  john:{
-    'Accepted':  {data:[3,0,2,1,2,0,0,0,0,0,0,0],color:'#639922'},
-    'Discarded': {data:[0,0,0,0,1,0,0,0,0,0,0,0],color:'#E24B4A'},
-    'New':       {data:[0,0,0,0,0,0,0,0,0,0,0,3],color:'#888'},
-    'Analysing': {data:[0,0,0,0,0,0,0,0,0,0,0,1],color:'#1D9E75'},
-  },
-};
+function processData(wb,fileName){
+  const alerts=[];
+  const {rows:general,sheetName:gnName}=getRows(wb,['estatus general','general']);
+  const {rows:porSprint,sheetName:psName}=getRows(wb,['estatus por spring','por spring','sprint']);
+  if(!gnName)alerts.push('⚠️ No se encontró la hoja "estatus general". Verifica el nombre.');
+  if(!psName)alerts.push('⚠️ No se encontró la hoja "estatus por spring". Verifica el nombre.');
+  document.getElementById('alerts').innerHTML=alerts.map(a=>`<div class="alert">${a}</div>`).join('');
 
-let eqChart=null;
-function buildEqChart(p){
-  if(eqChart)eqChart.destroy();
-  const d=EQDATA[p],tot=TOTALS[p];
-  eqChart=new Chart(document.getElementById('c4'),{type:'bar',data:{labels,datasets:Object.entries(d).map(([label,{data,color}])=>({label,data,backgroundColor:color,borderRadius:3,borderSkipped:false,datalabels:{display:ctx=>data[ctx.dataIndex]>0,color:'#fff',font:{size:10,weight:'500'},formatter:v=>v}}))},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:16}},plugins:{legend:{display:false},datalabels:{},tooltip:{callbacks:{label:ctx=>{const pct=tot>0?Math.round(ctx.parsed.y/tot*100):0;return` ${ctx.dataset.label}: ${ctx.parsed.y} (${pct}% de esta persona)`;},footer:items=>'Total sprint: '+items.reduce((s,i)=>s+i.parsed.y,0)}}},scales:{x:{stacked:true,ticks:{autoSkip:false,maxRotation:0,font:{size:11}},grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{stepSize:5,font:{size:11}},grid:{color:'rgba(0,0,0,0.06)'}}}}});
+  const localTeam=getEquipo(wb);
+  const genFiltered=general.filter(r=>r.sprint);
+  const psFiltered=porSprint.filter(r=>r.sprint);
+  const sprints=SPRINT_ORDER.filter(sp=>genFiltered.some(r=>r.sprint===sp));
+
+  // Comparación con carga anterior
+  const prev=prevData;
+  const ec={};genFiltered.forEach(r=>ec[r.estado]=(ec[r.estado]||0)+1);
+  const curr={total:genFiltered.length,accepted:ec['Accepted']||0,discarded:ec['Discarded']||0,blocked:ec['Blocked']||0,inprogress:ec['In Progress']||0,rtv:ec['Ready To Verify']||0,analysing:ec['Analysing']||0,other:(ec['To Rework']||0)+(ec['Test']||0)};
+
+  document.getElementById('dash-sub').textContent=`Registros con sprint asignado · ${gnName||'—'} · ${genFiltered.length} registros`;
+  document.getElementById('m-total').textContent=curr.total;
+  document.getElementById('m-accepted').textContent=curr.accepted;
+  document.getElementById('m-discarded').textContent=curr.discarded;
+  document.getElementById('m-blocked').textContent=curr.blocked;
+  document.getElementById('m-inprogress').textContent=curr.inprogress;
+  document.getElementById('m-rtv').textContent=curr.rtv;
+  document.getElementById('m-analysing').textContent=curr.analysing;
+  document.getElementById('m-other').textContent=curr.other;
+
+  if(prev){
+    delta(curr.total,prev.total,'d-total');
+    delta(curr.accepted,prev.accepted,'d-accepted');
+    delta(curr.discarded,prev.discarded,'d-discarded',true);
+    delta(curr.blocked,prev.blocked,'d-blocked',true);
+    delta(curr.inprogress,prev.inprogress,'d-inprogress',true);
+    delta(curr.rtv,prev.rtv,'d-rtv');
+    delta(curr.analysing,prev.analysing,'d-analysing',true);
+    delta(curr.other,prev.other,'d-other',true);
+  }
+  prevData=curr;
+
+  // Equipo
+  const localRows=genFiltered.filter(r=>localTeam.has(r.persona.toUpperCase()));
+  const globalRows=genFiltered.filter(r=>!localTeam.has(r.persona.toUpperCase()));
+  const nL=localRows.length,nG=globalRows.length,nT=nL+nG;
+  const pL=nT>0?Math.round(nL/nT*100):0,pG=100-pL;
+  document.getElementById('eq-total-badge').textContent=nT+' registros con sprint';
+  document.getElementById('t-local').textContent=nL;
+  document.getElementById('t-global').textContent=nG;
+  document.getElementById('t-local-pct').textContent=pL+'% del total';
+  document.getElementById('t-global-pct').textContent=pG+'% del total';
+  document.getElementById('bar-local').style.width=pL+'%';
+  document.getElementById('bar-global').style.width=pG+'%';
+  document.getElementById('bar-local-label').textContent='Local '+pL+'%';
+  document.getElementById('bar-global-label').textContent='Global '+pG+'%';
+  document.getElementById('bar-local-n').textContent=nL+' tareas';
+  document.getElementById('bar-global-n').textContent=nG+' tareas';
+
+  function mk(id,data,options){destroyChart(id);charts[id]=new Chart(document.getElementById(id),{data,options});}
+
+  // Estatus general
+  document.getElementById('c1b-count').textContent=genFiltered.length+' registros';
+  const egTotal=spTotal(genFiltered,sprints);
+  mk('c1b',{labels:sprints,datasets:[barDs(sprints,egTotal),lineDs('Accepted',spVals(genFiltered,sprints,'Accepted'),'#639922'),lineDs('Discarded',spVals(genFiltered,sprints,'Discarded'),'#E24B4A',[6,3]),lineDs('In Progress',spVals(genFiltered,sprints,'In Progress'),'#EF9F27',[4,4]),lineDs('Blocked',spVals(genFiltered,sprints,'Blocked'),'#7F77DD',[2,3]),lineDs('Ready To Verify',spVals(genFiltered,sprints,'Ready To Verify'),'#185FA5',[4,4]),lineDs('Analysing',spVals(genFiltered,sprints,'Analysing'),'#1D9E75',[2,3])]},opts(5));
+
+  // GAP General
+  const gapEg=sprints.map(sp=>genFiltered.filter(r=>r.sprint===sp&&['Accepted','Ready To Verify','Discarded'].includes(r.estado)).length);
+  buildGap('cgap_general','pct-general','cgap-general-count',sprints,egTotal,gapEg);
+
+  // Estatus por sprint
+  document.getElementById('c1-count').textContent=psFiltered.length+' registros';
+  const psTotal2=spTotal(psFiltered,sprints);
+  mk('c1',{labels:sprints,datasets:[barDs(sprints,psTotal2),lineDs('Accepted',spVals(psFiltered,sprints,'Accepted'),'#639922'),lineDs('Discarded',spVals(psFiltered,sprints,'Discarded'),'#E24B4A',[6,3]),lineDs('In Progress',spVals(psFiltered,sprints,'In Progress'),'#EF9F27',[4,4]),lineDs('Blocked',spVals(psFiltered,sprints,'Blocked'),'#7F77DD',[2,3])]},opts(5));
+
+  // GAP por sprint
+  const gapPs=sprints.map(sp=>psFiltered.filter(r=>r.sprint===sp&&['Accepted','Ready To Verify','Discarded'].includes(r.estado)).length);
+  buildGap('cgap_sprint','pct-sprint','cgap-sprint-count',sprints,psTotal2,gapPs);
+
+  // Análisis
+  const analRows=genFiltered.filter(r=>/an[aá]li[sz]is/i.test(r.resumen));
+  document.getElementById('c2-count').textContent=analRows.length+' registros';
+  mk('c2',{labels:sprints,datasets:[barDs(sprints,spTotal(analRows,sprints)),lineDs('Accepted',spVals(analRows,sprints,'Accepted'),'#639922'),lineDs('Discarded',spVals(analRows,sprints,'Discarded'),'#E24B4A',[6,3]),lineDs('Ready To Verify',spVals(analRows,sprints,'Ready To Verify'),'#185FA5',[4,4]),lineDs('In Progress',spVals(analRows,sprints,'In Progress'),'#EF9F27',[2,4]),lineDs('Analysing',spVals(analRows,sprints,'Analysing'),'#7F77DD',[2,3])]},opts(3));
+
+  // Validación
+  const valRows=genFiltered.filter(r=>/validaci[oó]n/i.test(r.resumen));
+  document.getElementById('c3-count').textContent=valRows.length+' registros';
+  mk('c3',{labels:sprints,datasets:[barDs(sprints,spTotal(valRows,sprints)),lineDs('Accepted',spVals(valRows,sprints,'Accepted'),'#639922'),lineDs('Discarded',spVals(valRows,sprints,'Discarded'),'#E24B4A',[6,3]),lineDs('In Progress',spVals(valRows,sprints,'In Progress'),'#EF9F27',[2,4]),lineDs('Blocked',spVals(valRows,sprints,'Blocked'),'#7F77DD',[4,4]),lineDs('Analysing',spVals(valRows,sprints,'Analysing'),'#185FA5',[2,3])]},opts(2));
+
+  // Equipo local
+  eqSprints=sprints;
+  const localPersonas=[...new Set(localRows.map(r=>r.persona).filter(Boolean))];
+  eqData={all:{}};
+  localPersonas.forEach((p,idx)=>{
+    const vals=sprints.map(sp=>localRows.filter(r=>r.sprint===sp&&r.persona===p).length);
+    const short=p.split(' ').slice(0,2).join(' ');
+    eqData.all[short]={vals,color:PERSON_COLORS[idx%PERSON_COLORS.length]};
+    eqData[p]={};
+    const pRows=localRows.filter(r=>r.persona===p);
+    const pEstados=[...new Set(pRows.map(r=>r.estado))];
+    pEstados.forEach(est=>{
+      const vals2=sprints.map(sp=>pRows.filter(r=>r.sprint===sp&&r.estado===est).length);
+      const tot=pRows.filter(r=>r.estado===est).length;
+      const pct=Math.round(tot/pRows.length*100);
+      eqData[p][est+'  '+pct+'%']={vals:vals2,color:COLORS[est]||'#888'};
+    });
+  });
+  document.getElementById('eq-badge').textContent=localRows.length+' registros';
+  const filterDiv=document.getElementById('eq-filters');
+  filterDiv.innerHTML=`<button class="fbtn active" onclick="filterEq(this,'all')">Todos</button>`+
+    localPersonas.map(p=>`<button class="fbtn" onclick="filterEq(this,'${p}')">${p.split(' ').slice(0,2).join(' ')}</button>`).join('');
+  buildEqChart('all');
+
+  // Homework delay
+  function hwCounts(rows){const c={};rows.filter(r=>r.hw).forEach(r=>{const v=parseInt(r.hw);if(!isNaN(v)&&v>0)c[v]=(c[v]||0)+1;});return c;}
+  const hwA=hwCounts(genFiltered.filter(r=>/an[aá]li[sz]is/i.test(r.resumen)));
+  const hwV=hwCounts(genFiltered.filter(r=>/validaci[oó]n/i.test(r.resumen)));
+  const maxHw=Math.max(...[...Object.keys(hwA),...Object.keys(hwV)].map(Number),1);
+  const dlabels=Array.from({length:maxHw},(_,i)=>(i+1)+' sprint'+(i>0?'s':''));
+  const adVals=Array.from({length:maxHw},(_,i)=>hwA[i+1]||0);
+  const vdVals=Array.from({length:maxHw},(_,i)=>hwV[i+1]||0);
+  const maxA=Math.max(...adVals,1),maxV=Math.max(...vdVals,1);
+  document.getElementById('ca-count').textContent=Object.values(hwA).reduce((a,b)=>a+b,0)+' tareas con retraso';
+  document.getElementById('cv-count').textContent=Object.values(hwV).reduce((a,b)=>a+b,0)+' tareas con retraso';
+  const dOpts={responsive:true,maintainAspectRatio:false,layout:{padding:{top:24}},plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',color:'rgba(100,100,100,0.8)',font:{size:11,weight:'500'},formatter:v=>v>0?v:''}},scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:11}},grid:{display:false}},y:{beginAtZero:true,ticks:{stepSize:5,font:{size:11}},grid:{color:'rgba(0,0,0,0.06)'}}}};
+  destroyChart('ca');charts['ca']=new Chart(document.getElementById('ca'),{type:'bar',data:{labels:dlabels,datasets:[{data:adVals,backgroundColor:adVals.map(v=>`rgba(24,95,165,${(0.3+0.7*(v/maxA)).toFixed(2)})`),borderRadius:4,borderSkipped:false}]},options:dOpts});
+  destroyChart('cv');charts['cv']=new Chart(document.getElementById('cv'),{type:'bar',data:{labels:dlabels,datasets:[{data:vdVals,backgroundColor:vdVals.map(v=>v>0?`rgba(29,158,117,${(0.3+0.7*(v/maxV)).toFixed(2)})`:'rgba(0,0,0,0)'),borderRadius:4,borderSkipped:false}]},options:dOpts});
+}
+
+function buildEqChart(persona){
+  const d=eqData[persona]||eqData['all'];
+  destroyChart('c4');
+  const datasets=Object.entries(d).map(([label,{vals,color}])=>({label,data:vals,backgroundColor:color,borderRadius:3,borderSkipped:false,datalabels:{display:ctx=>vals[ctx.dataIndex]>0,color:'#fff',font:{size:10,weight:'500'},formatter:v=>v}}));
+  charts['c4']=new Chart(document.getElementById('c4'),{type:'bar',data:{labels:eqSprints,datasets},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:16}},plugins:{legend:{display:false},datalabels:{},tooltip:{callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const pct=t>0?Math.round(ctx.parsed.y/t*100):0;return` ${ctx.dataset.label}: ${ctx.parsed.y} (${pct}% de esta persona)`},footer:items=>'Total sprint: '+items.reduce((s,i)=>s+i.parsed.y,0)}}},scales:{x:{stacked:true,ticks:{autoSkip:false,maxRotation:0,font:{size:11}},grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{stepSize:5,font:{size:11}},grid:{color:'rgba(0,0,0,0.06)'}}}}});
   document.getElementById('eq-legend').innerHTML=Object.entries(d).map(([label,{color}])=>`<span><span class="lsq" style="background:${color}"></span>${label}</span>`).join('');
 }
-function filterEq(btn,p){document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');buildEqChart(p);document.getElementById('eq-badge').textContent=TOTALS[p]+' registros';}
-buildEqChart('all');
 
-// Delays
-const dlabels=['1 sprint','2 sprints','3 sprints','4 sprints','5 sprints','6 sprints','7 sprints','8 sprints'];
-const ad=[25,33,23,11,4,3,1,1],vd=[27,9,7,3,1,0,2,0];
-const maxA=Math.max(...ad),maxV=Math.max(...vd.filter(v=>v>0));
-const dOpts={responsive:true,maintainAspectRatio:false,layout:{padding:{top:24}},plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',color:'rgba(100,100,100,0.8)',font:{size:11,weight:'500'},formatter:v=>v>0?v:''}},scales:{x:{ticks:{autoSkip:false,maxRotation:0,font:{size:11}},grid:{display:false}},y:{beginAtZero:true,ticks:{stepSize:5,font:{size:11}},grid:{color:'rgba(0,0,0,0.06)'}}}};
-new Chart(document.getElementById('ca'),{type:'bar',data:{labels:dlabels,datasets:[{data:ad,backgroundColor:ad.map(v=>`rgba(24,95,165,${(0.3+0.7*(v/maxA)).toFixed(2)})`),borderRadius:4,borderSkipped:false}]},options:dOpts});
-new Chart(document.getElementById('cv'),{type:'bar',data:{labels:dlabels,datasets:[{data:vd,backgroundColor:vd.map(v=>v>0?`rgba(29,158,117,${(0.3+0.7*(v/maxV)).toFixed(2)})`:'rgba(0,0,0,0)'),borderRadius:4,borderSkipped:false}]},options:dOpts});
+function filterEq(btn,persona){
+  document.querySelectorAll('#eq-filters .fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentPersona=persona;
+  buildEqChart(persona);
+  const rows=persona==='all'?Object.values(eqData.all):Object.values(eqData[persona]||{});
+  const total=rows.reduce((s,{vals})=>s+vals.reduce((a,b)=>a+b,0),0);
+  document.getElementById('eq-badge').textContent=total+' registros';
+}
 </script>
 
 
