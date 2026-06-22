@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
+<html lang="es"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard de Sprints</title>
@@ -58,8 +56,8 @@ footer{text-align:center;padding:1.5rem;font-size:11px;color:#bbb;border-top:0.5
 <div class="main-layout">
   <nav>
     <h2>Secciones</h2>
-    <button class="nav-btn active" onclick="navTo('s-metrics',this)">Métricas generales</button>
-    <button class="nav-btn" onclick="navTo('s-equipo',this)">Distribución equipo</button>
+    <button class="nav-btn" onclick="navTo('s-metrics',this)">Métricas generales</button>
+    <button class="nav-btn active" onclick="navTo('s-equipo',this)">Distribución equipo</button>
     <button class="nav-btn" onclick="navTo('s-eg',this)">Estatus general</button>
     <button class="nav-btn" onclick="navTo('s-gap-g',this)">GAP General</button>
     <button class="nav-btn" onclick="navTo('s-eps',this)">Estatus por sprint</button>
@@ -117,7 +115,7 @@ footer{text-align:center;padding:1.5rem;font-size:11px;color:#bbb;border-top:0.5
           <span><span class="lln" style="border-top:2px dotted #185FA5"></span>Ready To Verify</span>
           <span><span class="lln" style="border-top:2px dotted #1D9E75"></span>Analysing</span>
         </div>
-        <div style="position:relative;width:100%;height:260px"><canvas id="c1b"></canvas></div>
+        <div style="position:relative;width:100%;height:260px"><canvas id="c1b" width="850" height="260" style="display: block; box-sizing: border-box; height: 260px; width: 850px;"></canvas></div>
       </div>
 
       <!-- GAP General -->
@@ -128,8 +126,8 @@ footer{text-align:center;padding:1.5rem;font-size:11px;color:#bbb;border-top:0.5
           <span><span class="lln" style="border-top:2px solid #639922"></span>Tareas entregadas</span>
           <span><span class="lln" style="border-top:2px dashed rgba(120,120,120,0.5)"></span>Tendencia</span>
         </div>
-        <div class="pct-row" id="pct-general"></div>
-        <div style="position:relative;width:100%;height:270px"><canvas id="cgap_general"></canvas></div>
+        <div class="pct-row" id="pct-general"><span class="pct-pill"><span style="color:#888">Q1-S1</span><span style="font-weight:500;color:#3B6D11">100%</span></span><span class="pct-pill"><span style="color:#888">Q1-S2</span><span style="font-weight:500;color:#3B6D11">100%</span></span><span class="pct-pill"><span style="color:#888">Q1-S3</span><span style="font-weight:500;color:#854F0B">89%</span></span><span class="pct-pill"><span style="color:#888">Q1-S4</span><span style="font-weight:500;color:#854F0B">88%</span></span><span class="pct-pill"><span style="color:#888">Q1-S5</span><span style="font-weight:500;color:#3B6D11">96%</span></span><span class="pct-pill"><span style="color:#888">Q1-S6</span><span style="font-weight:500;color:#854F0B">85%</span></span><span class="pct-pill"><span style="color:#888">Q2-S1</span><span style="font-weight:500;color:#3B6D11">95%</span></span><span class="pct-pill"><span style="color:#888">Q2-S2</span><span style="font-weight:500;color:#3B6D11">93%</span></span><span class="pct-pill"><span style="color:#888">Q2-S3</span><span style="font-weight:500;color:#3B6D11">94%</span></span><span class="pct-pill"><span style="color:#888">Q2-S4</span><span style="font-weight:500;color:#854F0B">72%</span></span><span class="pct-pill"><span style="color:#888">Q2-S5</span><span style="font-weight:500;color:#A32D2D">67%</span></span><span class="pct-pill"><span style="color:#888">Q2-S6</span><span style="font-weight:500;color:#A32D2D">28%</span></span></div>
+        <div style="position:relative;width:100%;height:270px"><canvas id="cgap_general" width="850" height="270" style="display: block; box-sizing: border-box; height: 270px; width: 850px;"></canvas></div>
       </div>
 
       <!-- Estatus por sprint -->
@@ -145,7 +143,7 @@ footer{text-align:center;padding:1.5rem;font-size:11px;color:#bbb;border-top:0.5
           <span><span class="lln" style="border-top:2px dotted #185FA5"></span>Ready To Verify</span>
           <span><span class="lln" style="border-top:2px dotted #1D9E75"></span>Analysing</span>
         </div>
-        <div style="position:relative;width:100%;height:260px"><canvas id="c1"></canvas></div>
+        <div style="position:relative;width:100%;height:260px"><canvas id="c1" width="850" height="260" style="display: block; box-sizing: border-box; height: 260px; width: 850px;"></canvas></div>
       </div>
 
       <!-- GAP por sprint -->
@@ -156,8 +154,8 @@ footer{text-align:center;padding:1.5rem;font-size:11px;color:#bbb;border-top:0.5
           <span><span class="lln" style="border-top:2px solid #639922"></span>Tareas entregadas</span>
           <span><span class="lln" style="border-top:2px dashed rgba(120,120,120,0.5)"></span>Tendencia</span>
         </div>
-        <div class="pct-row" id="pct-sprint"></div>
-        <div style="position:relative;width:100%;height:270px"><canvas id="cgap_sprint"></canvas></div>
+        <div class="pct-row" id="pct-sprint"><span class="pct-pill"><span style="color:#888">Q1-S1</span><span style="font-weight:500;color:#3B6D11">100%</span></span><span class="pct-pill"><span style="color:#888">Q1-S2</span><span style="font-weight:500;color:#3B6D11">100%</span></span><span class="pct-pill"><span style="color:#888">Q1-S3</span><span style="font-weight:500;color:#854F0B">89%</span></span><span class="pct-pill"><span style="color:#888">Q1-S4</span><span style="font-weight:500;color:#854F0B">88%</span></span><span class="pct-pill"><span style="color:#888">Q1-S5</span><span style="font-weight:500;color:#3B6D11">96%</span></span><span class="pct-pill"><span style="color:#888">Q1-S6</span><span style="font-weight:500;color:#854F0B">85%</span></span><span class="pct-pill"><span style="color:#888">Q2-S1</span><span style="font-weight:500;color:#3B6D11">95%</span></span><span class="pct-pill"><span style="color:#888">Q2-S2</span><span style="font-weight:500;color:#3B6D11">93%</span></span><span class="pct-pill"><span style="color:#888">Q2-S3</span><span style="font-weight:500;color:#3B6D11">94%</span></span><span class="pct-pill"><span style="color:#888">Q2-S4</span><span style="font-weight:500;color:#A32D2D">67%</span></span><span class="pct-pill"><span style="color:#888">Q2-S5</span><span style="font-weight:500;color:#A32D2D">67%</span></span><span class="pct-pill"><span style="color:#888">Q2-S6</span><span style="font-weight:500;color:#A32D2D">26%</span></span></div>
+        <div style="position:relative;width:100%;height:270px"><canvas id="cgap_sprint" width="850" height="270" style="display: block; box-sizing: border-box; height: 270px; width: 850px;"></canvas></div>
       </div>
 
       <!-- Análisis -->
@@ -173,7 +171,7 @@ footer{text-align:center;padding:1.5rem;font-size:11px;color:#bbb;border-top:0.5
           <span><span class="lln" style="border-top:2px dotted #7F77DD"></span>Analysing</span>
           <span><span class="lln" style="border-top:2px dotted #888"></span>New</span>
         </div>
-        <div style="position:relative;width:100%;height:260px"><canvas id="c2"></canvas></div>
+        <div style="position:relative;width:100%;height:260px"><canvas id="c2" width="850" height="260" style="display: block; box-sizing: border-box; height: 260px; width: 850px;"></canvas></div>
       </div>
 
       <!-- Validación -->
@@ -189,7 +187,7 @@ footer{text-align:center;padding:1.5rem;font-size:11px;color:#bbb;border-top:0.5
           <span><span class="lln" style="border-top:2px dotted #185FA5"></span>Analysing</span>
           <span><span class="lln" style="border-top:2px dotted #888"></span>New</span>
         </div>
-        <div style="position:relative;width:100%;height:260px"><canvas id="c3"></canvas></div>
+        <div style="position:relative;width:100%;height:260px"><canvas id="c3" width="850" height="260" style="display: block; box-sizing: border-box; height: 260px; width: 850px;"></canvas></div>
       </div>
 
       <!-- Equipo local -->
@@ -202,22 +200,22 @@ footer{text-align:center;padding:1.5rem;font-size:11px;color:#bbb;border-top:0.5
           <button class="fbtn" onclick="filterEq(this,'carlos')">Carlos E. Manzano</button>
           <button class="fbtn" onclick="filterEq(this,'john')">John A. Alfonso</button>
         </div>
-        <div class="legend" id="eq-legend"></div>
-        <div style="position:relative;width:100%;height:280px"><canvas id="c4"></canvas></div>
+        <div class="legend" id="eq-legend"><span><span class="lsq" style="background:#185FA5"></span>Oscar J. Vega</span><span><span class="lsq" style="background:#1D9E75"></span>Jose C. Silva</span><span><span class="lsq" style="background:#EF9F27"></span>Carlos E. Manzano</span><span><span class="lsq" style="background:#7F77DD"></span>John A. Alfonso</span></div>
+        <div style="position:relative;width:100%;height:280px"><canvas id="c4" width="850" height="280" style="display: block; box-sizing: border-box; height: 280px; width: 850px;"></canvas></div>
       </div>
 
       <!-- Retraso análisis -->
       <div class="section" id="s-delay-a">
         <div class="section-header"><span class="section-title">Retraso en tareas de análisis</span><span class="section-count">101 tareas con retraso</span></div>
         <p class="chart-sub">Número de sprints de retraso (homework delay)</p>
-        <div style="position:relative;width:100%;height:240px"><canvas id="ca"></canvas></div>
+        <div style="position:relative;width:100%;height:240px"><canvas id="ca" width="850" height="240" style="display: block; box-sizing: border-box; height: 240px; width: 850px;"></canvas></div>
       </div>
 
       <!-- Retraso validación -->
       <div class="section" id="s-delay-v">
         <div class="section-header"><span class="section-title">Retraso en tareas de validación</span><span class="section-count">49 tareas con retraso</span></div>
         <p class="chart-sub">Número de sprints de retraso (homework delay)</p>
-        <div style="position:relative;width:100%;height:240px"><canvas id="cv"></canvas></div>
+        <div style="position:relative;width:100%;height:240px"><canvas id="cv" width="850" height="240" style="display: block; box-sizing: border-box; height: 240px; width: 850px;"></canvas></div>
       </div>
 
     </div>
@@ -384,5 +382,6 @@ const dOpts={responsive:true,maintainAspectRatio:false,layout:{padding:{top:24}}
 new Chart(document.getElementById('ca'),{type:'bar',data:{labels:dlabels,datasets:[{data:ad,backgroundColor:ad.map(v=>`rgba(24,95,165,${(0.3+0.7*(v/maxA)).toFixed(2)})`),borderRadius:4,borderSkipped:false}]},options:dOpts});
 new Chart(document.getElementById('cv'),{type:'bar',data:{labels:dlabels,datasets:[{data:vd,backgroundColor:vd.map(v=>v>0?`rgba(29,158,117,${(0.3+0.7*(v/maxV)).toFixed(2)})`:'rgba(0,0,0,0)'),borderRadius:4,borderSkipped:false}]},options:dOpts});
 </script>
-</body>
-</html>
+
+
+</body></html>
